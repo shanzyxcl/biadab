@@ -7,9 +7,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
-enum class NavigationItem(val icon: androidx.compose.ui.graphics.vector.ImageVector, val label: String) {
+enum class NavigationItem(val icon: ImageVector, val label: String) {
     HOME(Icons.Default.Home, "Home"),
     SEARCH(Icons.Default.Search, "Search")
 }
