@@ -67,6 +67,61 @@ class BookRepository @Inject constructor(
     }
 
     private suspend fun <T> executeWithRetry(
+    maxRetries: Int = 3,
+    delayMillis: Long = 1000,
+    block: suspend () -> T
+): Result<T> {
+    var lastError: ApiError? = null
+    
+    repeat(maxRetries) { attempt ->
+        try {
+            val result = block()
+            return Result.success(result)
+        } catch (e: HttpException) {
+            val httpCode = e.code()
+            val errorBody = e.response()?.errorBody()?.string()
+            val jsonMessage = try {
+                errorBody?.let { body ->
+                    val json = JSONObject(body)
+                    json.optString("message")
+                        ?: json.optString("error")
+                        ?: json.optString("msg")
+                        ?: body
+                }
+            } catch (_: Exception) { errorBody }
+            
+            lastError = ApiError(
+                httpCode = httpCode,
+                errorType = when (httpCode) {
+                    403 -> ErrorType.HTTP_403
+                    404 -> ErrorType.HTTP_404
+                    in 500..599 -> ErrorType.HTTP_500
+                    else -> ErrorType.UNKNOWN
+                },
+                message = "HTTP $httpCode: ${e.message()}",
+                jsonMessage = jsonMessage,
+                rawResponse = errorBody
+            )
+            
+            Log.e(TAG, """HTTP Error: ${e.message()}""")
+            
+            if (httpCode !in listOf(403, 408, 429) && httpCode in 400..499) {
+                return Result.failure(ApiErrorException(lastError))
+            }
+            
+            if (attempt < maxRetries - 1) {
+                delay(delayMillis * (attempt + 1))
+            }
+        } catch (e: Exception) {
+            lastError = ApiError(errorType = ErrorType.UNKNOWN, message = "${e.message}")
+            Log.e(TAG, "Unexpected error: ${e.message}")
+            return Result.failure(ApiErrorException(lastError))
+        }
+    }
+    return Result.failure(ApiErrorException(lastError ?: ApiError()))
+}
+
+  /**  private suspend fun <T> executeWithRetry(
         maxRetries: Int = 3,
         delayMillis: Long = 1000,
         block: suspend () -> T
@@ -173,7 +228,7 @@ class BookRepository @Inject constructor(
         }
         
         return Result.failure(ApiErrorException(lastError ?: ApiError()))
-    }
+    }**/
 
     private fun ensureValidUrl(url: String?): String {
         if (url.isNullOrEmpty()) return ""
