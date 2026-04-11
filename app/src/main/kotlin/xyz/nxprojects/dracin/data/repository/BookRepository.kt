@@ -6,8 +6,12 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import org.json.JSONObject
 import retrofit2.HttpException
 import java.io.IOException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import javax.inject.Inject
 
 class BookRepository @Inject constructor(
@@ -67,41 +71,108 @@ class BookRepository @Inject constructor(
         delayMillis: Long = 1000,
         block: suspend () -> T
     ): Result<T> {
-        var lastException: Exception? = null
+        var lastError: ApiError? = null
         
         repeat(maxRetries) { attempt ->
             try {
                 val result = block()
                 return Result.success(result)
             } catch (e: HttpException) {
-                lastException = e
+                val httpCode = e.code()
                 val errorBody = e.response()?.errorBody()?.string()
-                Log.e(TAG, "HTTP ${e.code()} pada percobaan ${attempt + 1}: ${e.message()}")
-                Log.e(TAG, "Error body: $errorBody")
+                
+                // Parse JSON message dari error response
+                val jsonMessage = try {
+                    errorBody?.let { body ->
+                        val json = JSONObject(body)
+                        json.optString("message") 
+                            ?: json.optString("error")
+                            ?: json.optString("msg")
+                            ?: body
+                    }
+                } catch (_: Exception) {
+                    errorBody
+                }
+                
+                lastError = ApiError(
+                    httpCode = httpCode,
+                    errorType = when (httpCode) {
+                        403 -> ErrorType.HTTP_403
+                        404 -> ErrorType.HTTP_404
+                        in 500..599 -> ErrorType.HTTP_500
+                        else -> ErrorType.UNKNOWN
+                    },
+                    message = "HTTP $httpCode: ${e.message()}",
+                    jsonMessage = jsonMessage,
+                    rawResponse = errorBody
+                )
+                
+                Log.e(TAG, "═══════════════════════════════════════")
+                Log.e(TAG, "HTTP Error pada percobaan ${attempt + 1}/$maxRetries")
+                Log.e(TAG, "HTTP Code: $httpCode")
+                Log.e(TAG, "Error Type: ${lastError?.errorType}")
+                Log.e(TAG, "Message: ${e.message()}")
+                Log.e(TAG, "JSON Response: $jsonMessage")
+                Log.e(TAG, "Raw Response: $errorBody")
+                Log.e(TAG, "═══════════════════════════════════════")
                 
                 // Jangan retry untuk 4xx errors kecuali 403, 408, 429
-                if (e.code() !in listOf(403, 408, 429) && e.code() in 400..499) {
+                if (httpCode !in listOf(403, 408, 429) && httpCode in 400..499) {
                     break
                 }
                 
                 if (attempt < maxRetries - 1) {
                     delay(delayMillis * (attempt + 1))
                 }
+            } catch (e: UnknownHostException) {
+                lastError = ApiError(
+                    errorType = ErrorType.NETWORK,
+                    message = "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
+                    jsonMessage = "DNS resolution failed: ${e.message}"
+                )
+                
+                Log.e(TAG, "Network error: Host tidak ditemukan - ${e.message}")
+                
+                if (attempt < maxRetries - 1) {
+                    delay(delayMillis * (attempt + 1))
+                }
+            } catch (e: SocketTimeoutException) {
+                lastError = ApiError(
+                    errorType = ErrorType.TIMEOUT,
+                    message = "Koneksi timeout. Server terlalu lama merespon.",
+                    jsonMessage = "Timeout: ${e.message}"
+                )
+                
+                Log.e(TAG, "Timeout error: ${e.message}")
+                
+                if (attempt < maxRetries - 1) {
+                    delay(delayMillis * (attempt + 1))
+                }
             } catch (e: IOException) {
-                lastException = e
-                Log.e(TAG, "Network error pada percobaan ${attempt + 1}: ${e.message}")
+                lastError = ApiError(
+                    errorType = ErrorType.NETWORK,
+                    message = "Gagal terhubung ke server. Periksa koneksi internet Anda.",
+                    jsonMessage = "IO Error: ${e.message}"
+                )
+                
+                Log.e(TAG, "IO error: ${e.message}")
                 
                 if (attempt < maxRetries - 1) {
                     delay(delayMillis * (attempt + 1))
                 }
             } catch (e: Exception) {
-                lastException = e
-                Log.e(TAG, "Unexpected error pada percobaan ${attempt + 1}: ${e.message}", e)
+                lastError = ApiError(
+                    errorType = ErrorType.UNKNOWN,
+                    message = "Terjadi kesalahan: ${e.message}",
+                    jsonMessage = e.stackTraceToString()
+                )
+                
+                Log.e(TAG, "Unexpected error: ${e.message}", e)
                 break
             }
         }
         
-        return Result.failure(lastException ?: Exception("Unknown error"))
+        return Result.failure(ApiErrorException(lastError ?: ApiError()))
     }
 
     private fun ensureValidUrl(url: String?): String {
@@ -109,3 +180,8 @@ class BookRepository @Inject constructor(
         return if (url.startsWith("http")) url else "https://$url"
     }
 }
+
+/**
+ * Custom exception untuk membawa ApiError detail
+ */
+class ApiErrorException(val apiError: ApiError) : Exception(apiError.message)
