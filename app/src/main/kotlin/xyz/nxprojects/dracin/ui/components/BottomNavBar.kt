@@ -21,7 +21,7 @@ fun BottomNavBar(
     onNavigate: (String) -> Unit
 ) {
     NavigationBar(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
         containerColor = Color(0xFF09090B),
         contentColor = Color(0xFFF43F5E),
         tonalElevation = 8.dp
