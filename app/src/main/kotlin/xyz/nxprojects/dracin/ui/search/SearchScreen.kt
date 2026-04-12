@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -21,6 +20,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import xyz.nxprojects.dracin.ui.components.DramaCard
+import xyz.nxprojects.dracin.ui.components.SearchTopAppBar
 
 @Composable
 fun SearchScreen(
@@ -35,6 +35,9 @@ fun SearchScreen(
             .fillMaxSize()
             .background(Color(0xFF09090B))
     ) {
+        // Top App Bar
+        SearchTopAppBar()
+
         // Search Bar
         Surface(
             modifier = Modifier
@@ -61,8 +64,12 @@ fun SearchScreen(
                 TextField(
                     value = uiState.query,
                     onValueChange = { viewModel.updateQuery(it) },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Cari drama...", color = Color.Gray) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(Color(0xFF18181B)),
+                    placeholder = {
+                        Text("Cari drama...", color = Color.Gray)
+                    },
                     textStyle = LocalTextStyle.current.copy(color = Color.White),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
