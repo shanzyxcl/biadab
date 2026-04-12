@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import xyz.nxprojects.dracin.data.model.ErrorType
 import xyz.nxprojects.dracin.ui.components.DramaCard
+import xyz.nxprojects.dracin.ui.components.HomeTopAppBar
 
 @Composable
 fun HomeScreen(
@@ -29,138 +30,138 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF09090B))
     ) {
-        if (uiState.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = Color(0xFFF43F5E)
-            )
-        } else if (uiState.error != null) {
-            // Enhanced Error Display
-            ErrorScreen(
-                error = uiState.error ?: "Unknown error",
-                errorDetail = uiState.errorDetail,
-                onRetry = { viewModel.refresh() }
-            )
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                // Header
+        // Top App Bar
+        HomeTopAppBar()
+
+        // Content
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF09090B))
+        ) {
+            if (uiState.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color(0xFFF43F5E)
+                )
+            } else if (uiState.error != null) {
+                // Enhanced Error Display
+                ErrorScreen(
+                    error = uiState.error ?: "Unknown error",
+                    errorDetail = uiState.errorDetail,
+                    onRetry = { viewModel.refresh() }
+                )
+            } else {
                 Column(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    Text(
-                        text = "Melolo ",
-                        color = Color.White,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    Text(
-                        text = "Stream",
-                        color = Color(0xFFF43F5E),
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    Text(
-                        text = "Nonton Drama Pendek Terbaik",
-                        modifier = Modifier.padding(top = 8.dp),
-                        color = Color.Gray,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+                    // Header
+                    Column(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+                    ) {
+                        Text(
+                            text = "Nonton Drama Pendek Terbaik",
+                            modifier = Modifier.padding(bottom = 8.dp),
+                            color = Color.Gray,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                // Trending Section
-                if (uiState.trending.isNotEmpty()) {
-                    Column {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.LocalFireDepartment,
-                                contentDescription = "Trending",
+                    // Trending Section
+                    if (uiState.trending.isNotEmpty()) {
+                        Column {
+                            Row(
                                 modifier = Modifier
-                                    .size(20.dp)
-                                    .padding(end = 8.dp),
-                                tint = Color(0xFFF43F5E)
-                            )
-                            Text(
-                                text = "Sedang Trending",
-                                color = Color.White,
-                                style = MaterialTheme.typography.titleMedium
-                            )
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocalFireDepartment,
+                                    contentDescription = "Trending",
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .padding(end = 8.dp),
+                                    tint = Color(0xFFF43F5E)
+                                )
+                                Text(
+                                    text = "Sedang Trending",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+
+                            LazyRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(uiState.trending) { drama ->
+                                    DramaCard(
+                                        drama = drama,
+                                        onCardClick = onDramaClick
+                                    )
+                                }
+                            }
                         }
 
-                        LazyRow(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(uiState.trending) { drama ->
-                                DramaCard(
-                                    drama = drama,
-                                    onCardClick = onDramaClick
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
+
+                    // Latest Section
+                    if (uiState.latest.isNotEmpty()) {
+                        Column {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Whatshot,
+                                    contentDescription = "Latest",
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .padding(end = 8.dp),
+                                    tint = Color(0xFFEAB308)
                                 )
+                                Text(
+                                    text = "Drama Terbaru",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+
+                            LazyRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(uiState.latest) { drama ->
+                                    DramaCard(
+                                        drama = drama,
+                                        onCardClick = onDramaClick
+                                    )
+                                }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(80.dp))
                 }
-
-                // Latest Section
-                if (uiState.latest.isNotEmpty()) {
-                    Column {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Whatshot,
-                                contentDescription = "Latest",
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .padding(end = 8.dp),
-                                tint = Color(0xFFEAB308)
-                            )
-                            Text(
-                                text = "Drama Terbaru",
-                                color = Color.White,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
-
-                        LazyRow(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(uiState.latest) { drama ->
-                                DramaCard(
-                                    drama = drama,
-                                    onCardClick = onDramaClick
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(80.dp))
             }
         }
     }
