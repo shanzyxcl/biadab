@@ -3,7 +3,11 @@ package xyz.nxprojects.dracin.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,6 +23,7 @@ import xyz.nxprojects.dracin.ui.home.HomeScreen
 import xyz.nxprojects.dracin.ui.player.PlayerScreen
 import xyz.nxprojects.dracin.ui.search.SearchScreen
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NxApp() {
     val navController = rememberNavController()
@@ -27,6 +32,28 @@ fun NxApp() {
 
     Scaffold(
         containerColor = Color(0xFF09090B),
+        topBar = {
+            when (currentRoute) {
+                "home" -> {
+                    HomeTopBar()
+                }
+                "search" -> {
+                    SearchTopBar()
+                }
+                "detail" -> {
+                    // Toolbar untuk detail screen sudah dihandle di DetailScreen
+                }
+                "player" -> {
+                    // Toolbar untuk player screen sudah dihandle di PlayerScreen
+                }
+                else -> {
+                    DefaultTopBar(
+                        title = currentRoute.replaceFirstChar { it.uppercase() },
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
+            }
+        },
         bottomBar = {
             if (currentRoute !in listOf("detail", "player")) {
                 BottomNavBar(
@@ -119,4 +146,94 @@ fun NxApp() {
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeTopBar() {
+    CenterAlignedTopAppBar(
+        title = {
+            Row {
+                Text(
+                    text = "Melolo ",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Text(
+                    text = "Stream",
+                    color = Color(0xFFF43F5E),
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
+        },
+        navigationIcon = {
+            IconButton(onClick = { /* Handle menu click */ }) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "Menu",
+                    tint = Color.White
+                )
+            }
+        },
+        actions = {
+            IconButton(onClick = { /* Handle more options */ }) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "More",
+                    tint = Color.White
+                )
+            }
+        },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = Color(0xFF09090B),
+            scrolledContainerColor = Color(0xFF09090B)
+        )
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchTopBar() {
+    CenterAlignedTopAppBar(
+        title = {
+            Text(
+                text = "Cari Drama",
+                color = Color.White,
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = Color(0xFF09090B),
+            scrolledContainerColor = Color(0xFF09090B)
+        )
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DefaultTopBar(
+    title: String,
+    onBackClick: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = title,
+                color = Color.White
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color(0xFF09090B),
+            scrolledContainerColor = Color(0xFF09090B)
+        )
+    )
 }
