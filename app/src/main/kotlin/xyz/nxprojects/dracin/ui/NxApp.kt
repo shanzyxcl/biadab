@@ -147,3 +147,90 @@ fun NxApp() {
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeTopBar() {
+    TopAppBar(
+        title = { 
+            Text(
+                text = "Dracin",
+                color = Color.White
+            ) 
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color(0xFF09090B)
+        ),
+        navigationIcon = {
+            IconButton(onClick = { /* Handle menu click */ }) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "Menu",
+                    tint = Color.White
+                )
+            }
+        },
+        actions = {
+            IconButton(onClick = { /* Handle more options */ }) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "More",
+                    tint = Color.White
+                )
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchTopBar() {
+    TopAppBar(
+        title = { 
+            Text(
+                text = "Search",
+                color = Color.White
+            )
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color(0xFF09090B)
+        ),
+        navigationIcon = {
+            IconButton(onClick = { /* Handle back navigation if needed */ }) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DefaultTopBar(
+    title: String,
+    onBackClick: () -> Unit
+) {
+    TopAppBar(
+        title = { 
+            Text(
+                text = title,
+                color = Color.White
+            )
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color(0xFF09090B)
+        ),
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
+        }
+    )
+}
