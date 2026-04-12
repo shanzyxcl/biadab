@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
@@ -45,7 +44,9 @@ fun PlayerScreen(
     // Initialize ExoPlayer
     LaunchedEffect(context) {
         if (exoPlayer == null) {
-            exoPlayer = ExoPlayer.Builder(context).build()
+            exoPlayer = ExoPlayer.Builder(context).build().also {
+                isPlaying = it.isPlaying
+            }
         }
     }
 
@@ -58,8 +59,18 @@ fun PlayerScreen(
                 exoPlayer!!.setMediaItem(mediaItem)
                 exoPlayer!!.prepare()
                 exoPlayer!!.play()
+                isPlaying = true
             }
         }
+    }
+
+    // Update isPlaying state
+    LaunchedEffect(exoPlayer) {
+        exoPlayer?.addListener(object : androidx.media3.common.Player.Listener {
+            override fun onIsPlayingChanged(playing: Boolean) {
+                isPlaying = playing
+            }
+        })
     }
 
     DisposableEffect(Unit) {
@@ -111,7 +122,10 @@ fun PlayerScreen(
                     )
                     Button(
                         onClick = { viewModel.loadStream(videoId, bookId) },
-                        modifier = Modifier.padding(top = 16.dp)
+                        modifier = Modifier.padding(top = 16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFF43F5E)
+                        )
                     ) {
                         Text("Retry")
                     }
@@ -119,12 +133,16 @@ fun PlayerScreen(
             } else if (exoPlayer != null) {
                 // Video Player
                 AndroidView(
-                    factory = {
-                        PlayerView(context).apply {
+                    factory = { ctx ->
+                        PlayerView(ctx).apply {
                             player = exoPlayer
                             useController = true
-                            controllerShowTimeoutMs = 5000
-                            controllerHideTimeoutMs = 5000
+                            // Timeout diatur menggunakan metode baru
+                            setControllerVisibilityListener { visibility ->
+                                // Optional: Handle controller visibility changes
+                            }
+                            // Gunakan controllerAutoShow untuk mengatur auto show/hide
+                            controllerAutoShow = true
                         }
                     },
                     modifier = Modifier
@@ -139,8 +157,11 @@ fun PlayerScreen(
                         currentVideoId = videoId,
                         isPlaying = isPlaying,
                         onPlayPause = { 
-                            isPlaying = !isPlaying
-                            if (isPlaying) exoPlayer?.play() else exoPlayer?.pause() 
+                            if (isPlaying) {
+                                exoPlayer?.pause()
+                            } else {
+                                exoPlayer?.play()
+                            }
                         },
                         onNextEpisode = onNextEpisode,
                         modifier = Modifier.align(Alignment.BottomCenter)
@@ -153,7 +174,7 @@ fun PlayerScreen(
 
 @Composable
 private fun BottomPlayerBar(
-    videoData: xyz.nxprojects.dracin.data.model.VideoData,
+    videoData: VideoData,
     currentVideoId: String,
     isPlaying: Boolean,
     onPlayPause: () -> Unit,
