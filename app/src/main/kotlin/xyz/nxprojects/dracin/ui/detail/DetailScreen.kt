@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,8 +28,8 @@ import coil.compose.AsyncImage
 import kotlinx.serialization.json.Json
 import xyz.nxprojects.dracin.data.model.Category
 import xyz.nxprojects.dracin.data.model.VideoInfo
-import xyz.nxprojects.dracin.ui.components.DetailTopAppBar
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
     bookId: String,
@@ -42,21 +43,49 @@ fun DetailScreen(
 
     val uiState by viewModel.uiState.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF09090B))
-    ) {
-        // Top App Bar
-        DetailTopAppBar(
-            title = uiState.videoData?.seriesTitle ?: "Drama Details",
-            onBackClick = onBackClick
-        )
-
-        // Content
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = uiState.videoData?.seriesTitle ?: "Detail Drama",
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                },
+                actions = {
+                    if (uiState.videoData != null) {
+                        IconButton(onClick = { /* Handle share */ }) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Share",
+                                tint = Color.White
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF09090B),
+                    scrolledContainerColor = Color(0xFF09090B)
+                )
+            )
+        },
+        containerColor = Color(0xFF09090B)
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
                 .background(Color(0xFF09090B))
         ) {
             if (uiState.isLoading) {
@@ -116,9 +145,9 @@ fun DetailScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(
-                                    brush = androidx.compose.foundation.background(
-                                        Color.Black.copy(alpha = 0.3f)
-                                    ).brush
+                                    Brush.verticalGradient(
+                                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.3f))
+                                    )
                                 )
                         )
 
@@ -132,14 +161,12 @@ fun DetailScreen(
                                 shape = RoundedCornerShape(50),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = Color(0xFFF43F5E)
-                                ),
-                                contentPadding = PaddingValues(0.dp)
+                                )
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.PlayArrow,
                                     contentDescription = "Play",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(32.dp)
+                                    tint = Color.White
                                 )
                             }
                         }
@@ -151,14 +178,6 @@ fun DetailScreen(
                             .fillMaxWidth()
                             .padding(16.dp)
                     ) {
-                        Text(
-                            text = videoData.seriesTitle,
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = Color.White,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -214,31 +233,33 @@ fun DetailScreen(
                     }
 
                     // Episodes
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        Text(
-                            text = "Daftar Episode",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.White
-                        )
-
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(4),
+                    if (videoData.videoList.isNotEmpty()) {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            userScrollEnabled = false
+                                .padding(horizontal = 16.dp)
                         ) {
-                            items(videoData.videoList) { episode ->
-                                EpisodeCard(
-                                    episode = episode,
-                                    onEpisodeClick = { onVideoClick(episode.vid) }
-                                )
+                            Text(
+                                text = "Daftar Episode",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
+
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(4),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                userScrollEnabled = false
+                            ) {
+                                items(videoData.videoList) { episode ->
+                                    EpisodeCard(
+                                        episode = episode,
+                                        onEpisodeClick = { onVideoClick(episode.vid) }
+                                    )
+                                }
                             }
                         }
                     }
