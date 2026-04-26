@@ -137,10 +137,12 @@ fun PlayerScreen(
                         PlayerView(ctx).apply {
                             player = exoPlayer
                             useController = true
-                            // Timeout diatur menggunakan metode baru
-                            setControllerVisibilityListener { visibility ->
-                                // Optional: Handle controller visibility changes
-                            }
+                            // Fix: Explicit cast untuk menghindari overload resolution ambiguity
+                            setControllerVisibilityListener(
+                                PlayerView.ControllerVisibilityListener { visibility ->
+                                    // Optional: Handle controller visibility changes
+                                }
+                            )
                             // Gunakan controllerAutoShow untuk mengatur auto show/hide
                             controllerAutoShow = true
                         }
