@@ -1,11 +1,9 @@
+// DetailScreen.kt - FULL
 package xyz.nxprojects.dracin.ui.detail
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -259,26 +257,36 @@ fun DetailScreen(
                                 color = Color.White
                             )
 
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(4),
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                userScrollEnabled = false
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                items(videoData.videoList) { episode ->
-                                    EpisodeCard(
-                                        episode = episode,
-                                        onEpisodeClick = { 
-                                            try {
-                                                onVideoClick(episode.vid)
-                                            } catch (e: Exception) {
-                                                showErrorDialog = true
+                                videoData.videoList.chunked(4).forEach { rowItems ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        rowItems.forEach { episode ->
+                                            Box(modifier = Modifier.weight(1f)) {
+                                                EpisodeCard(
+                                                    episode = episode,
+                                                    onEpisodeClick = { 
+                                                        try {
+                                                            onVideoClick(episode.vid)
+                                                        } catch (e: Exception) {
+                                                            showErrorDialog = true
+                                                        }
+                                                    }
+                                                )
                                             }
                                         }
-                                    )
+                                        // Fill remaining space jika kurang dari 4
+                                        repeat(4 - rowItems.size) {
+                                            Spacer(modifier = Modifier.weight(1f))
+                                        }
+                                    }
                                 }
                             }
                         }
