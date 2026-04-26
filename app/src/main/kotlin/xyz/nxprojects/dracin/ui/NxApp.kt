@@ -1,3 +1,4 @@
+// NxApp.kt - FULL
 package xyz.nxprojects.dracin.ui
 
 import androidx.compose.foundation.layout.Box
@@ -106,7 +107,7 @@ fun NxApp() {
                     DetailScreen(
                         bookId = bookId,
                         onVideoClick = { videoId ->
-                            navController.navigate("player/$videoId?bookId=$bookId")
+                            navController.navigate("player/$videoId")
                         },
                         onBackClick = {
                             navController.popBackStack()
@@ -115,32 +116,16 @@ fun NxApp() {
                 }
 
                 composable(
-                    route = "player/{videoId}?bookId={bookId}",
-                    arguments = listOf(
-                        navArgument("videoId") { type = NavType.StringType },
-                        navArgument("bookId") { 
-                            type = NavType.StringType
-                            nullable = true
-                            defaultValue = null
-                        }
-                    )
+                    route = "player/{videoId}",
+                    arguments = listOf(navArgument("videoId") { type = NavType.StringType })
                 ) { backStackEntry ->
                     currentRoute = "player"
                     val videoId = backStackEntry.arguments?.getString("videoId") ?: return@composable
-                    val bookId = backStackEntry.arguments?.getString("bookId")
                     
                     PlayerScreen(
                         videoId = videoId,
-                        bookId = bookId,
-                        context = context,
-                        onBackClick = {
-                            navController.popBackStack()
-                        },
-                        onNextEpisode = { nextVideoId ->
-                            navController.navigate("player/$nextVideoId?bookId=$bookId") {
-                                popUpTo("player/$videoId?bookId=$bookId") { inclusive = true }
-                            }
-                        }
+                        onBackClick = { navController.popBackStack() },
+                        context = context
                     )
                 }
             }
