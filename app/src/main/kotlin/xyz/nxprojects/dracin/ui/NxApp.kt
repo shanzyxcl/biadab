@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
@@ -183,10 +184,10 @@ fun SearchTopBar() {
         navigationIcon = {
             IconButton(onClick = { /* Handle back navigation if needed */ }) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.White
-                )
+    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+    contentDescription = "Back",
+    tint = Color.White
+)
             }
         }
     )
@@ -211,10 +212,10 @@ fun DefaultTopBar(
         navigationIcon = {
             IconButton(onClick = onBackClick) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.White
-                )
+    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+    contentDescription = "Back",
+    tint = Color.White
+)
             }
         }
     )
