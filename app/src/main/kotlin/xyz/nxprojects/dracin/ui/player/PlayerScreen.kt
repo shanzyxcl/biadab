@@ -22,55 +22,69 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import xyz.nxprojects.dracin.data.model.VideoData
+import xyz.nxprojects.dracin.ui.components.ErrorDialog
 import xyz.nxprojects.dracin.ui.components.PlayerTopAppBar
 
 @Composable
 fun PlayerScreen(
     videoId: String,
-    bookId: String?,
     onBackClick: () -> Unit,
-    onNextEpisode: (String) -> Unit,
     context: Context,
     viewModel: PlayerViewModel = hiltViewModel()
 ) {
+    var showErrorDialog by remember { mutableStateOf(false) }
+    
     LaunchedEffect(videoId) {
-        viewModel.loadStream(videoId, bookId)
+        try {
+            viewModel.loadVideo(videoId)
+        } catch (e: Exception) {
+            showErrorDialog = true
+        }
     }
 
     val uiState by viewModel.uiState.collectAsState()
-    var isPlaying by remember { mutableStateOf(false) }
     var exoPlayer: ExoPlayer? by remember { mutableStateOf(null) }
+
+    // Show error dialog jika ada error
+    if (showErrorDialog || uiState.error != null) {
+        ErrorDialog(
+            title = "Error Load Video",
+            message = uiState.error ?: "Terjadi kesalahan saat memuat video",
+            stackTrace = uiState.errorStackTrace,
+            onDismiss = { 
+                showErrorDialog = false
+                onBackClick()
+            },
+            onRetry = {
+                showErrorDialog = false
+                viewModel.loadVideo(videoId)
+            }
+        )
+    }
 
     // Initialize ExoPlayer
     LaunchedEffect(context) {
-        if (exoPlayer == null) {
-            exoPlayer = ExoPlayer.Builder(context).build().also {
-                isPlaying = it.isPlaying
+        try {
+            if (exoPlayer == null) {
+                exoPlayer = ExoPlayer.Builder(context).build()
             }
+        } catch (e: Exception) {
+            showErrorDialog = true
         }
     }
 
     // Set video URL
-    LaunchedEffect(uiState.streamData) {
-        if (exoPlayer != null && uiState.streamData != null) {
-            val url = uiState.streamData!!.mainUrl.ifEmpty { uiState.streamData!!.backupUrl }
-            if (url.isNotEmpty()) {
-                val mediaItem = MediaItem.fromUri(url)
+    LaunchedEffect(uiState.videoUrl) {
+        try {
+            if (exoPlayer != null && uiState.videoUrl != null) {
+                val mediaItem = MediaItem.fromUri(uiState.videoUrl!!)
                 exoPlayer!!.setMediaItem(mediaItem)
                 exoPlayer!!.prepare()
-                exoPlayer!!.play()
-                isPlaying = true
+                exoPlayer!!.playWhenReady = true
             }
+        } catch (e: Exception) {
+            showErrorDialog = true
         }
-    }
-
-    // Update isPlaying state
-    LaunchedEffect(exoPlayer) {
-        exoPlayer?.addListener(object : androidx.media3.common.Player.Listener {
-            override fun onIsPlayingChanged(playing: Boolean) {
-                isPlaying = playing
-            }
-        })
     }
 
     DisposableEffect(Unit) {
@@ -86,11 +100,8 @@ fun PlayerScreen(
     ) {
         // Top App Bar
         PlayerTopAppBar(
-            title = uiState.videoData?.seriesTitle ?: "Player",
-            episode = if (uiState.videoData != null) {
-                val currentIndex = uiState.videoData!!.videoList.indexOfFirst { it.vid == videoId }
-                if (currentIndex >= 0) "EP ${currentIndex + 1}" else ""
-            } else "",
+            title = "Video Player",
+            episode = "",
             onBackClick = onBackClick
         )
 
@@ -104,46 +115,13 @@ fun PlayerScreen(
                     modifier = Modifier.align(Alignment.Center),
                     color = Color(0xFFF43F5E)
                 )
-            } else if (uiState.error != null) {
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ErrorOutline,
-                        contentDescription = "Error",
-                        modifier = Modifier.size(48.dp),
-                        tint = Color(0xFFF43F5E)
-                    )
-                    Text(
-                        text = uiState.error ?: "Error loading video",
-                        color = Color.White,
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-                    Button(
-                        onClick = { viewModel.loadStream(videoId, bookId) },
-                        modifier = Modifier.padding(top = 16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFF43F5E)
-                        )
-                    ) {
-                        Text("Retry")
-                    }
-                }
-            } else if (exoPlayer != null) {
+            } else if (exoPlayer != null && uiState.videoUrl != null) {
                 // Video Player
                 AndroidView(
                     factory = { ctx ->
                         PlayerView(ctx).apply {
                             player = exoPlayer
                             useController = true
-                            // Fix: Explicit cast untuk menghindari overload resolution ambiguity
-                            setControllerVisibilityListener(
-                                PlayerView.ControllerVisibilityListener { visibility ->
-                                    // Optional: Handle controller visibility changes
-                                }
-                            )
-                            // Gunakan controllerAutoShow untuk mengatur auto show/hide
                             controllerAutoShow = true
                         }
                     },
@@ -151,142 +129,6 @@ fun PlayerScreen(
                         .fillMaxSize()
                         .align(Alignment.Center)
                 )
-
-                // Bottom Bar with Episode Navigation
-                if (uiState.videoData != null) {
-                    BottomPlayerBar(
-                        videoData = uiState.videoData!!,
-                        currentVideoId = videoId,
-                        isPlaying = isPlaying,
-                        onPlayPause = { 
-                            if (isPlaying) {
-                                exoPlayer?.pause()
-                            } else {
-                                exoPlayer?.play()
-                            }
-                        },
-                        onNextEpisode = onNextEpisode,
-                        modifier = Modifier.align(Alignment.BottomCenter)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun BottomPlayerBar(
-    videoData: VideoData,
-    currentVideoId: String,
-    isPlaying: Boolean,
-    onPlayPause: () -> Unit,
-    onNextEpisode: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val currentIndex = videoData.videoList.indexOfFirst { it.vid == currentVideoId }
-    val hasPrev = currentIndex > 0
-    val hasNext = currentIndex >= 0 && currentIndex < videoData.videoList.size - 1
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(Color(0xFF09090B))
-            .padding(16.dp)
-    ) {
-        // Controls
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = {
-                    if (hasPrev) onNextEpisode(videoData.videoList[currentIndex - 1].vid)
-                },
-                enabled = hasPrev
-            ) {
-                Icon(
-                    imageVector = Icons.Default.SkipPrevious,
-                    contentDescription = "Previous",
-                    tint = if (hasPrev) Color.White else Color.Gray
-                )
-            }
-
-            IconButton(
-                onClick = onPlayPause,
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(Color(0xFFF43F5E), shape = RoundedCornerShape(50))
-            ) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-
-            IconButton(
-                onClick = {
-                    if (hasNext) onNextEpisode(videoData.videoList[currentIndex + 1].vid)
-                },
-                enabled = hasNext
-            ) {
-                Icon(
-                    imageVector = Icons.Default.SkipNext,
-                    contentDescription = "Next",
-                    tint = if (hasNext) Color.White else Color.Gray
-                )
-            }
-        }
-
-        // Next Episode Preview
-        if (hasNext && currentIndex >= 0) {
-            val nextEpisode = videoData.videoList[currentIndex + 1]
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNextEpisode(nextEpisode.vid) }
-                    .clip(RoundedCornerShape(8.dp)),
-                color = Color(0xFF18181B)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    AsyncImage(
-                        model = nextEpisode.cover,
-                        contentDescription = "Next Episode",
-                        modifier = Modifier
-                            .size(64.dp, 48.dp)
-                            .clip(RoundedCornerShape(4.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Up Next",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFFF43F5E)
-                        )
-                        Text(
-                            text = "Episode ${nextEpisode.vidIndex}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color.White
-                        )
-                    }
-
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Play",
-                        tint = Color.Gray
-                    )
-                }
             }
         }
     }
