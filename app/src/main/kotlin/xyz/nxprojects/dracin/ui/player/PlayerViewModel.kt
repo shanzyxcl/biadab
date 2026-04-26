@@ -1,4 +1,4 @@
-// PlayerViewModel.kt - FULL
+// PlayerViewModel.kt - FULL (FIXED)
 package xyz.nxprojects.dracin.ui.player
 
 import androidx.lifecycle.SavedStateHandle
@@ -41,8 +41,12 @@ class PlayerViewModel @Inject constructor(
                 
                 if (result.isSuccess) {
                     val streamData = result.getOrNull()
+                    val videoUrl = streamData?.mainUrl?.ifEmpty { 
+                        streamData.backupUrl 
+                    } ?: streamData?.videoModel?.videoList?.values?.firstOrNull()?.mainUrlDecoded
+                    
                     _uiState.value = PlayerUiState(
-                        videoUrl = streamData?.videoUrl,
+                        videoUrl = videoUrl,
                         isLoading = false
                     )
                 } else {
