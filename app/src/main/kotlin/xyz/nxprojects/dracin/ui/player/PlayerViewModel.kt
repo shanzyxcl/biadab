@@ -1,5 +1,7 @@
+// PlayerViewModel.kt - FULL
 package xyz.nxprojects.dracin.ui.player
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import xyz.nxprojects.dracin.data.repository.BookRepository
@@ -19,20 +21,28 @@ data class PlayerUiState(
 
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
-    private val bookRepository: BookRepository
+    private val bookRepository: BookRepository,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
+
+    private val videoId: String = checkNotNull(savedStateHandle["videoId"])
+
+    init {
+        loadVideo(videoId)
+    }
 
     fun loadVideo(vid: String) {
         viewModelScope.launch {
             try {
                 _uiState.value = PlayerUiState(isLoading = true)
-                val result = bookRepository.getVideoUrl(vid)
+                val result = bookRepository.getStream(vid)
                 
                 if (result.isSuccess) {
+                    val streamData = result.getOrNull()
                     _uiState.value = PlayerUiState(
-                        videoUrl = result.getOrNull(),
+                        videoUrl = streamData?.videoUrl,
                         isLoading = false
                     )
                 } else {
