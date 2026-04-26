@@ -28,6 +28,7 @@ import coil.compose.AsyncImage
 import kotlinx.serialization.json.Json
 import xyz.nxprojects.dracin.data.model.Category
 import xyz.nxprojects.dracin.data.model.VideoInfo
+import xyz.nxprojects.dracin.ui.components.ErrorDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,11 +38,34 @@ fun DetailScreen(
     onBackClick: () -> Unit,
     viewModel: DetailViewModel = hiltViewModel()
 ) {
+    var showErrorDialog by remember { mutableStateOf(false) }
+    
     LaunchedEffect(bookId) {
-        viewModel.loadDetail(bookId)
+        try {
+            viewModel.loadDetail(bookId)
+        } catch (e: Exception) {
+            showErrorDialog = true
+        }
     }
 
     val uiState by viewModel.uiState.collectAsState()
+
+    // Show error dialog jika ada error
+    if (showErrorDialog || uiState.error != null) {
+        ErrorDialog(
+            title = "Error Load Detail",
+            message = uiState.error ?: "Terjadi kesalahan saat memuat detail drama",
+            stackTrace = uiState.errorStackTrace,
+            onDismiss = { 
+                showErrorDialog = false
+                onBackClick()
+            },
+            onRetry = {
+                showErrorDialog = false
+                viewModel.loadDetail(bookId)
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -93,22 +117,6 @@ fun DetailScreen(
                     modifier = Modifier.align(Alignment.Center),
                     color = Color(0xFFF43F5E)
                 )
-            } else if (uiState.error != null) {
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = uiState.error ?: "Unknown error",
-                        color = Color.White
-                    )
-                    Button(
-                        onClick = { viewModel.loadDetail(bookId) },
-                        modifier = Modifier.padding(top = 16.dp)
-                    ) {
-                        Text("Retry")
-                    }
-                }
             } else if (uiState.videoData != null) {
                 val videoData = uiState.videoData!!
                 val categories = remember {
@@ -154,7 +162,13 @@ fun DetailScreen(
                         // Play Button
                         if (videoData.videoList.isNotEmpty()) {
                             Button(
-                                onClick = { onVideoClick(videoData.videoList[0].vid) },
+                                onClick = { 
+                                    try {
+                                        onVideoClick(videoData.videoList[0].vid)
+                                    } catch (e: Exception) {
+                                        showErrorDialog = true
+                                    }
+                                },
                                 modifier = Modifier
                                     .align(Alignment.Center)
                                     .size(56.dp),
@@ -257,7 +271,13 @@ fun DetailScreen(
                                 items(videoData.videoList) { episode ->
                                     EpisodeCard(
                                         episode = episode,
-                                        onEpisodeClick = { onVideoClick(episode.vid) }
+                                        onEpisodeClick = { 
+                                            try {
+                                                onVideoClick(episode.vid)
+                                            } catch (e: Exception) {
+                                                showErrorDialog = true
+                                            }
+                                        }
                                     )
                                 }
                             }

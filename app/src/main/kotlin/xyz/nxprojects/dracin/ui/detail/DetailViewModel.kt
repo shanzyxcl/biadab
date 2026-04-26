@@ -14,7 +14,8 @@ import javax.inject.Inject
 data class DetailUiState(
     val videoData: VideoData? = null,
     val isLoading: Boolean = true,
-    val error: String? = null
+    val error: String? = null,
+    val errorStackTrace: String? = null
 )
 
 @HiltViewModel
@@ -26,18 +27,28 @@ class DetailViewModel @Inject constructor(
 
     fun loadDetail(bookId: String) {
         viewModelScope.launch {
-            _uiState.value = DetailUiState(isLoading = true)
-            val result = bookRepository.getDetail(bookId)
-            
-            if (result.isSuccess) {
-                _uiState.value = DetailUiState(
-                    videoData = result.getOrNull(),
-                    isLoading = false
-                )
-            } else {
+            try {
+                _uiState.value = DetailUiState(isLoading = true)
+                val result = bookRepository.getDetail(bookId)
+                
+                if (result.isSuccess) {
+                    _uiState.value = DetailUiState(
+                        videoData = result.getOrNull(),
+                        isLoading = false
+                    )
+                } else {
+                    val exception = result.exceptionOrNull()
+                    _uiState.value = DetailUiState(
+                        isLoading = false,
+                        error = exception?.message ?: "Failed to load detail",
+                        errorStackTrace = exception?.stackTraceToString()
+                    )
+                }
+            } catch (e: Exception) {
                 _uiState.value = DetailUiState(
                     isLoading = false,
-                    error = result.exceptionOrNull()?.message ?: "Failed to load detail"
+                    error = "Crash: ${e.message ?: "Unknown error"}",
+                    errorStackTrace = e.stackTraceToString()
                 )
             }
         }
