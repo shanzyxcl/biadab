@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import xyz.nxprojects.dracin.ui.components.DramaCard
+import xyz.nxprojects.dracin.ui.components.ErrorDialog
 
 @Composable
 fun HomeScreen(
@@ -24,6 +25,21 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showErrorDialog by remember { mutableStateOf(false) }
+
+    // Show error dialog jika ada error
+    if (showErrorDialog || (uiState.error != null && !uiState.isLoading)) {
+        ErrorDialog(
+            title = "Error Load Data",
+            message = uiState.error ?: "Terjadi kesalahan saat memuat data",
+            stackTrace = uiState.errorStackTrace,
+            onDismiss = { showErrorDialog = false },
+            onRetry = {
+                showErrorDialog = false
+                viewModel.refresh()
+            }
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -35,22 +51,6 @@ fun HomeScreen(
                 modifier = Modifier.align(Alignment.Center),
                 color = Color(0xFFF43F5E)
             )
-        } else if (uiState.error != null) {
-            Column(
-                modifier = Modifier.align(Alignment.Center),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = uiState.error ?: "Unknown error",
-                    color = Color.White
-                )
-                Button(
-                    onClick = { viewModel.refresh() },
-                    modifier = Modifier.padding(top = 16.dp)
-                ) {
-                    Text("Retry")
-                }
-            }
         } else {
             Column(
                 modifier = Modifier
@@ -104,7 +104,13 @@ fun HomeScreen(
                             items(uiState.trending) { drama ->
                                 DramaCard(
                                     drama = drama,
-                                    onCardClick = onDramaClick
+                                    onCardClick = { bookId ->
+                                        try {
+                                            onDramaClick(bookId)
+                                        } catch (e: Exception) {
+                                            showErrorDialog = true
+                                        }
+                                    }
                                 )
                             }
                         }
@@ -147,7 +153,13 @@ fun HomeScreen(
                             items(uiState.latest) { drama ->
                                 DramaCard(
                                     drama = drama,
-                                    onCardClick = onDramaClick
+                                    onCardClick = { bookId ->
+                                        try {
+                                            onDramaClick(bookId)
+                                        } catch (e: Exception) {
+                                            showErrorDialog = true
+                                        }
+                                    }
                                 )
                             }
                         }
