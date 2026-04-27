@@ -72,6 +72,8 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
 
+    implementation(libs.accompanist.systemuicontroller)
+
     // Media3 ExoPlayer
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
