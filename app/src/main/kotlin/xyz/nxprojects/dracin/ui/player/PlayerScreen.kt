@@ -37,12 +37,10 @@ fun PlayerScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
-    // Load initial video list (you might want to load multiple videos)
     LaunchedEffect(videoId) {
         viewModel.loadVideo(videoId)
     }
 
-    // Create a list of videos (for now just one, but you can expand this)
     val videoList = remember(uiState.videoUrl) {
         if (uiState.videoUrl != null) listOf(uiState.videoUrl!!) else emptyList()
     }
@@ -84,36 +82,26 @@ fun TikTokStyleVideoPlayer(
 ) {
     val context = LocalContext.current
     val pagerState = rememberPagerState(pageCount = { videos.size })
-    
-    // Store ExoPlayers for each video
-    val exoPlayers = remember {
-        mutableStateMapOf<Int, ExoPlayer>()
-    }
-    
-    // Track current playing state
+    val exoPlayers = remember { mutableStateMapOf<Int, ExoPlayer>() }
     var isPlaying by remember { mutableStateOf(true) }
     var showControls by remember { mutableStateOf(false) }
 
-    // Auto-hide controls
+    val currentShowControls by rememberUpdatedState(newValue = showControls)
+
+    // Auto-hide control logic
     LaunchedEffect(showControls) {
-        if (showControls) {
+        if (currentShowControls) {
             delay(3000)
             showControls = false
         }
     }
 
-    // Handle page changes - play current, pause others
     LaunchedEffect(pagerState.currentPage) {
         exoPlayers.forEach { (index, player) ->
-            if (index == pagerState.currentPage) {
-                player.playWhenReady = isPlaying
-            } else {
-                player.playWhenReady = false
-            }
+            player.playWhenReady = index == pagerState.currentPage && isPlaying
         }
     }
 
-    // Cleanup players when component is disposed
     DisposableEffect(Unit) {
         onDispose {
             exoPlayers.values.forEach { it.release() }
@@ -124,24 +112,18 @@ fun TikTokStyleVideoPlayer(
     Box(modifier = Modifier.fillMaxSize()) {
         VerticalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxSize(),
-            beyondBoundsPageCount = 1 // Preload 1 page above and below
+            modifier = Modifier.fillMaxSize()
         ) { page ->
             VideoPlayerPage(
                 videoUrl = videos[page],
                 isCurrentPage = page == pagerState.currentPage,
                 isPlaying = isPlaying,
                 context = context,
-                onPlayerReady = { player ->
-                    exoPlayers[page] = player
-                },
-                onTap = {
-                    showControls = !showControls
-                }
+                onPlayerReady = { player -> exoPlayers[page] = player },
+                onTap = { showControls = !showControls }
             )
         }
 
-        // Top App Bar (always visible)
         PlayerTopAppBar(
             title = "Video ${pagerState.currentPage + 1}/${videos.size}",
             episode = "",
@@ -149,13 +131,11 @@ fun TikTokStyleVideoPlayer(
             modifier = Modifier.align(Alignment.TopCenter)
         )
 
-        // Play/Pause button overlay (shows on tap)
         if (showControls) {
             IconButton(
                 onClick = {
                     isPlaying = !isPlaying
                     exoPlayers[pagerState.currentPage]?.playWhenReady = isPlaying
-                    showControls = true
                 },
                 modifier = Modifier
                     .align(Alignment.Center)
@@ -173,31 +153,6 @@ fun TikTokStyleVideoPlayer(
                 )
             }
         }
-
-        // Video progress indicator (optional)
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            repeat(videos.size) { index ->
-                Box(
-                    modifier = Modifier
-                        .padding(horizontal = 4.dp)
-                        .width(if (index == pagerState.currentPage) 32.dp else 8.dp)
-                        .height(4.dp)
-                        .background(
-                            color = if (index == pagerState.currentPage) 
-                                Color(0xFFF43F5E) 
-                            else 
-                                Color.White.copy(alpha = 0.3f),
-                            shape = MaterialTheme.shapes.small
-                        )
-                )
-            }
-        }
     }
 }
 
@@ -210,73 +165,23 @@ fun VideoPlayerPage(
     onPlayerReady: (ExoPlayer) -> Unit,
     onTap: () -> Unit
 ) {
-    var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
-    var isPlayerReady by remember { mutableStateOf(false) }
-
-    // Initialize player
-    LaunchedEffect(videoUrl) {
-        if (exoPlayer == null) {
-            val player = ExoPlayer.Builder(context).build().apply {
-                val mediaItem = MediaItem.fromUri(videoUrl)
-                setMediaItem(mediaItem)
-                prepare()
-                repeatMode = Player.REPEAT_MODE_ONE // Loop video
-                
-                // Add listener for player state
-                addListener(object : Player.Listener {
-                    override fun onPlaybackStateChanged(playbackState: Int) {
-                        if (playbackState == Player.STATE_READY) {
-                            isPlayerReady = true
-                        }
-                    }
-                })
-            }
-            exoPlayer = player
-            onPlayerReady(player)
+    val exoPlayer = remember { ExoPlayer.Builder(context).build().apply {
+            setMediaItem(MediaItem.fromUri(videoUrl))
+            prepare()
+            repeatMode = Player.REPEAT_MODE_ONE
         }
     }
 
-    // Control playback based on page visibility
-    LaunchedEffect(isCurrentPage, isPlaying) {
-        exoPlayer?.playWhenReady = isCurrentPage && isPlaying
-    }
-
-    // Cleanup when page is no longer visible
     DisposableEffect(Unit) {
-        onDispose {
-            exoPlayer?.release()
-        }
+        onDispose { exoPlayer.release() }
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = { onTap() }
-                )
-            }
+        Modifier.pointerInput(Unit) { detectTapGestures { onTap.invoke() }}
     ) {
-        if (exoPlayer != null) {
-            AndroidView(
-                factory = { ctx ->
-                    PlayerView(ctx).apply {
-                        player = exoPlayer
-                        useController = false // Hide default controls
-                        controllerAutoShow = false
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-
-        // Loading indicator
-        if (!isPlayerReady) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = Color(0xFFF43F5E)
-            )
-        }
+        AndroidView(factory = { ctx -> PlayerView(ctx).apply {
+            player = exoPlayer
+            useController = false
+        }})
     }
 }
