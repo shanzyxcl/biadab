@@ -12,8 +12,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class HomeUiState(
-    val trending: List<Book> = emptyList(),
-    val latest: List<Book> = emptyList(),
+    val home: List<Book> = emptyList(),
+    val drama18: List<Book> = emptyList(),
+    val komik: List<Book> = emptyList(),
     val isLoading: Boolean = true,
     val error: String? = null,
     val errorStackTrace: String? = null
@@ -39,17 +40,21 @@ class HomeViewModel @Inject constructor(
             try {
                 _uiState.value = HomeUiState(isLoading = true)
                 
-                val trendingResult = bookRepository.getTrending()
-                val latestResult = bookRepository.getLatest()
+                val homeResult = bookRepository.getHome()
+                val drama18Result = bookRepository.getDrama18()
+                val komikResult = bookRepository.getKomik()
 
-                if (trendingResult.isSuccess && latestResult.isSuccess) {
+                if (homeResult.isSuccess && drama18Result.isSuccess && komikResult.isSuccess) {
                     _uiState.value = HomeUiState(
-                        trending = trendingResult.getOrNull() ?: emptyList(),
-                        latest = latestResult.getOrNull() ?: emptyList(),
+                        home = homeResult.getOrNull() ?: emptyList(),
+                        drama18 = drama18Result.getOrNull() ?: emptyList(),
+                        komik = komikResult.getOrNull() ?: emptyList(),
                         isLoading = false
                     )
                 } else {
-                    val error = trendingResult.exceptionOrNull() ?: latestResult.exceptionOrNull()
+                    val error = homeResult.exceptionOrNull() 
+                        ?: drama18Result.exceptionOrNull() 
+                        ?: komikResult.exceptionOrNull()
                     _uiState.value = HomeUiState(
                         isLoading = false,
                         error = error?.message ?: "Failed to load data",

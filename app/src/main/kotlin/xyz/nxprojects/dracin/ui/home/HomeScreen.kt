@@ -70,8 +70,8 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Trending Section
-                if (uiState.trending.isNotEmpty()) {
+                // Home Section
+                if (uiState.home.isNotEmpty()) {
                     Column {
                         Row(
                             modifier = Modifier
@@ -81,14 +81,14 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.LocalFireDepartment,
-                                contentDescription = "Trending",
+                                contentDescription = "Home",
                                 modifier = Modifier
                                     .size(20.dp)
                                     .padding(end = 8.dp),
                                 tint = Color(0xFFF43F5E)
                             )
                             Text(
-                                text = "Sedang Trending",
+                                text = "Drama Populer",
                                 color = Color.White,
                                 style = MaterialTheme.typography.titleMedium
                             )
@@ -101,7 +101,7 @@ fun HomeScreen(
                             contentPadding = PaddingValues(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(uiState.trending) { drama ->
+                            items(uiState.home) { drama ->
                                 DramaCard(
                                     drama = drama,
                                     onCardClick = { bookId ->
@@ -119,8 +119,8 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(32.dp))
                 }
 
-                // Latest Section
-                if (uiState.latest.isNotEmpty()) {
+                // Drama 18+ Section
+                if (uiState.drama18.isNotEmpty()) {
                     Column {
                         Row(
                             modifier = Modifier
@@ -130,14 +130,14 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Whatshot,
-                                contentDescription = "Latest",
+                                contentDescription = "Drama 18+",
                                 modifier = Modifier
                                     .size(20.dp)
                                     .padding(end = 8.dp),
-                                tint = Color(0xFFEAB308)
+                                tint = Color(0xFFEF4444)
                             )
                             Text(
-                                text = "Drama Terbaru",
+                                text = "Drama 18+",
                                 color = Color.White,
                                 style = MaterialTheme.typography.titleMedium
                             )
@@ -150,7 +150,56 @@ fun HomeScreen(
                             contentPadding = PaddingValues(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(uiState.latest) { drama ->
+                            items(uiState.drama18) { drama ->
+                                DramaCard(
+                                    drama = drama,
+                                    onCardClick = { bookId ->
+                                        try {
+                                            onDramaClick(bookId)
+                                        } catch (e: Exception) {
+                                            showErrorDialog = true
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
+
+                // Komik Section
+                if (uiState.komik.isNotEmpty()) {
+                    Column {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Whatshot,
+                                contentDescription = "Komik",
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .padding(end = 8.dp),
+                                tint = Color(0xFFEAB308)
+                            )
+                            Text(
+                                text = "Komik",
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(uiState.komik) { drama ->
                                 DramaCard(
                                     drama = drama,
                                     onCardClick = { bookId ->
