@@ -111,7 +111,7 @@ fun SearchScreen(
                     )
                 }
 
-                !uiState.query.isEmprty() -> {
+                !uiState.query.isEmpty() -> {
                     Text(
                         text = "Mulai cari drama favorit Anda",
                         modifier = Modifier.align(Alignment.Center),
