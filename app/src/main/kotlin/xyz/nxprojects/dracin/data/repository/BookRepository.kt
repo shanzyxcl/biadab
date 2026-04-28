@@ -19,27 +19,32 @@ class BookRepository @Inject constructor(
 ) {
     private val TAG = "BookRepository"
     
-    suspend fun getLatest(): Result<List<Book>> = withContext(Dispatchers.IO) {
+    suspend fun getHome(): Result<List<Book>> = withContext(Dispatchers.IO) {
         executeWithRetry {
-            val response = api.getLatest()
+            val response = api.getHome()
             response.books.map { it.copy(thumbUrl = ensureValidUrl(it.thumbUrl)) }
         }
     }
 
-    suspend fun getTrending(): Result<List<Book>> = withContext(Dispatchers.IO) {
+    suspend fun getDrama18(): Result<List<Book>> = withContext(Dispatchers.IO) {
         executeWithRetry {
-            val response = api.getTrending()
+            val response = api.getDrama18()
+            response.books.map { it.copy(thumbUrl = ensureValidUrl(it.thumbUrl)) }
+        }
+    }
+
+    suspend fun getKomik(): Result<List<Book>> = withContext(Dispatchers.IO) {
+        executeWithRetry {
+            val response = api.getKomik()
             response.books.map { it.copy(thumbUrl = ensureValidUrl(it.thumbUrl)) }
         }
     }
 
     suspend fun searchBooks(
-        query: String,
-        limit: Int = 10,
-        offset: Int = 0
+        query: String
     ): Result<List<Book>> = withContext(Dispatchers.IO) {
         executeWithRetry {
-            val response = api.searchBooks(query, limit, offset)
+            val response = api.searchBooks(query)
             response.data.searchData
                 .flatMap { it.books }
                 .filter { it.bookName.isNotEmpty() }
@@ -47,9 +52,9 @@ class BookRepository @Inject constructor(
         }
     }
 
-    suspend fun getDetail(bookId: String): Result<VideoData> = withContext(Dispatchers.IO) {
+    suspend fun getDetail(dramaId: String): Result<VideoData> = withContext(Dispatchers.IO) {
         executeWithRetry {
-            val response = api.getDetail(bookId)
+            val response = api.getDetail(dramaId)
             response.data.videoData.copy(
                 seriesCover = ensureValidUrl(response.data.videoData.seriesCover),
                 videoList = response.data.videoData.videoList.map {
@@ -59,9 +64,9 @@ class BookRepository @Inject constructor(
         }
     }
 
-    suspend fun getStream(videoId: String): Result<StreamData> = withContext(Dispatchers.IO) {
+    suspend fun getStream(fileId: String): Result<StreamData> = withContext(Dispatchers.IO) {
         executeWithRetry {
-            val response = api.getStream(videoId)
+            val response = api.getStream(fileId)
             response.data
         }
     }
