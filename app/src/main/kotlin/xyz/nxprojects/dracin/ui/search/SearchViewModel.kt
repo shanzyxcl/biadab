@@ -17,8 +17,8 @@ data class SearchUiState(
     val query: String = "",
     val results: List<Book> = emptyList(),
     val isLoading: Boolean = false,
-    val hasSearched: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val errorStackTrace: String? = null
 )
 
 @HiltViewModel
@@ -27,53 +27,48 @@ class SearchViewModel @Inject constructor(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
-    
+
     private var searchJob: Job? = null
 
     fun updateQuery(query: String) {
-        _uiState.value = _uiState.value.copy(
-            query = query,
-            hasSearched = if (query.isEmpty()) false else _uiState.value.hasSearched
-        )
+        _uiState.value = _uiState.value.copy(query = query)
         
         searchJob?.cancel()
         
-        if (query.isNotEmpty()) {
+        if (query.length >= 2) {
             searchJob = viewModelScope.launch {
                 delay(500)
                 search(query)
             }
         } else {
-            _uiState.value = _uiState.value.copy(
-                results = emptyList(),
-                isLoading = false,
-                hasSearched = false
-            )
+            _uiState.value = _uiState.value.copy(results = emptyList(), error = null)
         }
     }
 
     private suspend fun search(query: String) {
-        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         try {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            
             val result = bookRepository.searchBooks(query)
+            
             if (result.isSuccess) {
                 _uiState.value = _uiState.value.copy(
                     results = result.getOrNull() ?: emptyList(),
-                    isLoading = false,
-                    hasSearched = true
+                    isLoading = false
                 )
             } else {
+                val exception = result.exceptionOrNull()
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    hasSearched = true,
-                    error = result.exceptionOrNull()?.message
+                    error = exception?.message ?: "Failed to search",
+                    errorStackTrace = exception?.stackTraceToString()
                 )
             }
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                hasSearched = true,
-                error = e.message
+                error = "Crash: ${e.message ?: "Unknown error"}",
+                errorStackTrace = e.stackTraceToString()
             )
         }
     }
