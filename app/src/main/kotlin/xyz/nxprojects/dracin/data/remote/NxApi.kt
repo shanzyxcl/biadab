@@ -5,26 +5,27 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface MeloloApi {
-    @GET("latest")
-    suspend fun getLatest(): GetBooksResponse
+    @GET("home")
+    suspend fun getHome(): GetBooksResponse
 
-    @GET("trending")
-    suspend fun getTrending(): GetBooksResponse
+    @GET("drama18")
+    suspend fun getDrama18(): GetBooksResponse
+
+    @GET("komik")
+    suspend fun getKomik(): GetBooksResponse
 
     @GET("search")
     suspend fun searchBooks(
-        @Query("query") query: String,
-        @Query("limit") limit: Int = 10,
-        @Query("offset") offset: Int = 0
+        @Query("query") query: String
     ): SearchResponse
 
     @GET("detail")
     suspend fun getDetail(
-        @Query("bookId") bookId: String
+        @Query("dramaId") dramaId: String
     ): DetailResponse
 
-    @GET("stream")
+    @GET("getvideo")
     suspend fun getStream(
-        @Query("videoId") videoId: String
+        @Query("fileId") fileId: String
     ): StreamResponse
 }
