@@ -117,14 +117,14 @@ fun NxApp() {
                 }
 
                 composable(
-                    route = "player/{videoId}",
-                    arguments = listOf(navArgument("videoId") { type = NavType.StringType })
+                    route = "player/{fileId}",
+                    arguments = listOf(navArgument("fileId") { type = NavType.StringType })
                 ) { backStackEntry ->
                     currentRoute = "player"
-                    val videoId = backStackEntry.arguments?.getString("videoId") ?: return@composable
-                    
+                    val fileId = backStackEntry.arguments?.getString("fileId") ?: return@composable
+                
                     PlayerScreen(
-                        videoId = videoId,
+                        fileId = fileId,
                         onBackClick = { navController.popBackStack() },
                         context = context
                     )
