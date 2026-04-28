@@ -25,11 +25,11 @@ class DetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
 
-    fun loadDetail(bookId: String) {
+    fun loadDetail(dramaId: String) {
         viewModelScope.launch {
             try {
                 _uiState.value = DetailUiState(isLoading = true)
-                val result = bookRepository.getDetail(bookId)
+                val result = bookRepository.getDetail(dramaId)
                 
                 if (result.isSuccess) {
                     _uiState.value = DetailUiState(
